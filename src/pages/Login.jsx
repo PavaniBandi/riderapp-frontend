@@ -1,80 +1,105 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 
-export default function Login() {
-  const [form, setForm] = useState({ username: "", password: "" });
+const Login = () => {
+  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const API = import.meta.env.VITE_API_URL;
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    const res = await fetch(
-      "https://riderapp-backend-production.up.railway.app/auth/login",
-      {
+    try {
+      const res = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(formData),
+      });
+
+      const text = await res.text(); // because response is plain string
+      console.log("Login Response:", text);
+
+      if (res.ok && text.includes(":")) {
+        const [role, token] = text.split(":");
+
+        // Manually build user object
+        const user = {
+          username: formData.username,
+          role: role,
+        };
+
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+
+        if (role === "RIDER") {
+          navigate("/rider-dashboard");
+        } else {
+          navigate("/driver-dashboard");
+        }
+      } else {
+        setError("Invalid login response format");
       }
-    );
-
-    if (!res.ok) {
-      const err = await res.text();
-      alert(err);
-      return;
-    }
-
-    const responseText = await res.text(); // e.g. "DRIVER:eyJ..."
-    const [role, token] = responseText.split(":");
-
-    localStorage.setItem("token", token);
-
-    // ✅ Decode role from token to verify
-    const decoded = jwtDecode(token);
-    const roles = decoded.roles || [];
-
-    // ✅ Redirect based on role
-    if (roles.includes("ROLE_DRIVER")) {
-      navigate("/dashboard");
-      window.location.reload();
-    } else if (roles.includes("ROLE_RIDER")) {
-      navigate("/dashboard");
-      window.location.reload();
-    } else {
-      alert("Unknown role");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Something went wrong");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-4 border rounded-xl shadow-md">
-      <h2 className="text-xl font-bold mb-4">Login</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Username"
-          className="p-2 border rounded"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="p-2 border rounded"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
-        <button className="bg-green-500 text-white px-4 py-2 rounded">
+    <div className="flex justify-center items-center h-screen overflow-hidden bg-gray-100 px-4">
+      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
+        <h1 className="text-3xl font-bold text-yellow-500 mb-4 text-center">
+          RiderApp
+        </h1>
+        <h2 className="text-xl font-semibold mb-6 text-center text-gray-700">
           Login
-        </button>
-      </form>
+        </h2>
 
-      {/* ✅ Signup Link */}
-      <p className="mt-4 text-sm text-center">
-        Don't have an account?{" "}
-        <Link to="/signup" className="text-blue-600 hover:underline">
-          Sign up here
-        </Link>
-      </p>
+        {/* <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">
+          Login
+        </h2> */}
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            name="username"
+            type="text"
+            placeholder="Username"
+            value={formData.username}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-400"
+            required
+          />
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-400"
+            required
+          />
+          <button
+            type="submit"
+            className="w-full bg-yellow-400 text-black font-semibold py-2 rounded-lg hover:bg-yellow-300"
+          >
+            Login
+          </button>
+        </form>
+        <p className="text-sm text-center mt-4">
+          Don’t have an account?{" "}
+          <Link to="/signup" className="text-yellow-600 hover:underline">
+            Signup
+          </Link>
+        </p>
+      </div>
     </div>
   );
-}
+};
+
+export default Login;

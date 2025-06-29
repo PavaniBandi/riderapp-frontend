@@ -6,17 +6,15 @@ export default function DriverDashboard() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const API_BASE = import.meta.env.VITE_API_URL;
 
   const fetchAvailableRides = async () => {
     try {
-      const res = await fetch(
-        "https://riderapp-backend-production.up.railway.app/ride/driver/dashboard",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`${API_BASE}/ride/driver/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (res.status === 403) {
         setError("You are not authorized to view this page.");
@@ -33,15 +31,12 @@ export default function DriverDashboard() {
 
   const handleAccept = async (rideId) => {
     try {
-      const res = await fetch(
-        `https://riderapp-backend-production.up.railway.app/ride/accept/${rideId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`${API_BASE}/ride/accept/${rideId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (res.ok) {
         alert("Ride accepted!");
@@ -57,9 +52,8 @@ export default function DriverDashboard() {
 
   const handleStatusUpdate = async (rideId, status) => {
     try {
-      let url = `https://riderapp-backend-production.up.railway.app/ride/ride/${rideId}/status?status=${status}`;
+      let url = `${API_BASE}/ride/ride/${rideId}/status?status=${status}`;
 
-      // Ask payment mode if status is COMPLETED
       if (status === "COMPLETED") {
         const paymentMode = window.prompt("Enter payment mode (Cash/Online):");
         if (!paymentMode) return alert("Payment mode is required");
@@ -90,12 +84,14 @@ export default function DriverDashboard() {
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Welcome, Driver</h2>
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      <h2 className="text-3xl font-bold mb-6 text-yellow-500">
+        Welcome, Driver
+      </h2>
 
       <button
-        onClick={() => navigate("/rides")}
-        className="mb-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        onClick={() => navigate("/myrides")}
+        className="mb-6 bg-yellow-400 text-black font-semibold px-5 py-2 rounded-lg hover:bg-yellow-300"
       >
         My Rides
       </button>
@@ -103,30 +99,32 @@ export default function DriverDashboard() {
       {error && <p className="text-red-600">{error}</p>}
 
       {rides.length === 0 && !error ? (
-        <p>No available ride requests right now.</p>
+        <p className="text-gray-600">No available ride requests right now.</p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {rides.map((ride) => (
             <div
               key={ride.id}
-              className="border p-4 rounded shadow flex justify-between items-center"
+              className="border-l-4 border-yellow-400 bg-white shadow-md rounded-xl p-5 flex justify-between items-start"
             >
               <div>
-                <p>
+                <p className="mb-1">
                   <strong>Pickup:</strong> {ride.pickupLocation}
                 </p>
-                <p>
+                <p className="mb-1">
                   <strong>Drop:</strong> {ride.dropLocation}
                 </p>
-                <p>
+                <p className="mb-1">
                   <strong>Fare:</strong> ₹{ride.estimatedFare.toFixed(2)}
                 </p>
-                <p>
+                <p className="mb-1">
                   <strong>ETA:</strong> {ride.estimatedTime} mins
                 </p>
-                <p>
+                <p className="mb-1">
                   <strong>Status:</strong>{" "}
-                  <span className="uppercase">{ride.status}</span>
+                  <span className="uppercase font-medium text-gray-700">
+                    {ride.status}
+                  </span>
                 </p>
               </div>
 
@@ -134,7 +132,7 @@ export default function DriverDashboard() {
                 {ride.status === "REQUESTED" && (
                   <button
                     onClick={() => handleAccept(ride.id)}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                   >
                     Accept
                   </button>
@@ -143,18 +141,18 @@ export default function DriverDashboard() {
                 {ride.status === "ACCEPTED" && (
                   <button
                     onClick={() => handleStatusUpdate(ride.id, "PICKED")}
-                    className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                    className="bg-yellow-500 text-black px-4 py-2 rounded-lg hover:bg-yellow-400"
                   >
-                    Picked
+                    Mark as Picked
                   </button>
                 )}
 
                 {ride.status === "PICKED" && (
                   <button
                     onClick={() => handleStatusUpdate(ride.id, "COMPLETED")}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                   >
-                    Complete & Pay
+                    Complete & Collect
                   </button>
                 )}
               </div>

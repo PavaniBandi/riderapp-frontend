@@ -1,74 +1,85 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
-export default function BookRide() {
+const BookRide = () => {
   const [pickup, setPickup] = useState("");
   const [drop, setDrop] = useState("");
-  const [ride, setRide] = useState(null);
+  const [message, setMessage] = useState("");
+  const API = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem("token");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
 
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      "https://riderapp-backend-production.up.railway.app/ride/book",
-      {
+    try {
+      const res = await fetch(`${API}/ride/book`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ pickup, drop }),
-      }
-    );
+        body: JSON.stringify({
+          pickup: pickup,
+          drop: drop, // ✅ updated field names
+        }),
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      setRide(data);
-    } else {
-      alert("Booking failed");
+      if (res.ok) {
+        setMessage("✅ Ride booked successfully!");
+        setPickup("");
+        setDrop("");
+      } else {
+        const err = await res.text();
+        setMessage(err || "Failed to book ride");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Something went wrong.");
     }
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4">Book a Ride</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
-          className="p-2 border rounded"
-          placeholder="Pickup Location"
-          value={pickup}
-          onChange={(e) => setPickup(e.target.value)}
-        />
-        <input
-          className="p-2 border rounded"
-          placeholder="Drop Location"
-          value={drop}
-          onChange={(e) => setDrop(e.target.value)}
-        />
-        <button className="bg-blue-600 text-white py-2 rounded" type="submit">
-          Book Ride
-        </button>
-      </form>
+    <div className="flex justify-center items-center min-h-screen px-4">
+      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md border-l-4 border-yellow-400">
+        <h2 className="text-2xl font-bold mb-6 text-yellow-500">Book a Ride</h2>
 
-      {ride && (
-        <div className="mt-4 border p-3 rounded shadow">
-          <p>
-            <strong>Pickup:</strong> {ride.pickupLocation}
+        {message && (
+          <p
+            className={`mb-4 text-sm font-medium ${
+              message.startsWith("✅") ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {message}
           </p>
-          <p>
-            <strong>Drop:</strong> {ride.dropLocation}
-          </p>
-          <p>
-            <strong>Fare:</strong> ₹{ride.estimatedFare.toFixed(2)}
-          </p>
-          <p>
-            <strong>ETA:</strong> {ride.estimatedTime} mins
-          </p>
-          <p>
-            <strong>Status:</strong> {ride.status}
-          </p>
-        </div>
-      )}
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Pickup Location"
+            value={pickup}
+            onChange={(e) => setPickup(e.target.value)}
+            required
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-400"
+          />
+          <input
+            type="text"
+            placeholder="Drop Location"
+            value={drop}
+            onChange={(e) => setDrop(e.target.value)}
+            required
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-400"
+          />
+          <button
+            type="submit"
+            className="w-full bg-yellow-400 text-black font-semibold py-2 rounded-lg hover:bg-yellow-300"
+          >
+            Book Ride
+          </button>
+        </form>
+      </div>
     </div>
   );
-}
+};
+
+export default BookRide;
